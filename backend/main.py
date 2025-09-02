@@ -3,6 +3,7 @@ from scalar_fastapi import get_scalar_api_reference
 import uvicorn
 import logging
 import zotero
+import llm
 
 logger = logging.getLogger("backend")
 app = FastAPI(title="Zotero Assistant API")
@@ -31,6 +32,12 @@ def get_collections():
 def get_collection(collection_key):
     """获取指定文献集中的所有文献"""
     return zotero.get_items_in_collection(collection_key)
+
+
+@app.post("/embedding_text")
+def embedding_text(text: str):
+    """获取文本的嵌入表示"""
+    return llm.get_text_embedding(text)
 
 
 @app.get("/items/{item_id}")
