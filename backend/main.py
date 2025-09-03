@@ -40,6 +40,13 @@ def embedding_text(text: str):
     return llm.get_text_embedding(text)
 
 
+@app.get("/update_index")
+def update_index():
+    """更新索引"""
+    # TODO: 更新全文搜索数据库和llamaindex索引
+    return {"message": "Index updated"}
+
+
 @app.get("/items/{item_id}")
 def get_item(item_id: int, q: str = None):
     return {"item_id": item_id, "q": q}
