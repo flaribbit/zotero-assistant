@@ -108,6 +108,7 @@ dependencies = [
     { name = "fastapi" },
     { name = "httpx" },
     { name = "llama-index" },
+    { name = "llama-index-llms-siliconflow" },
     { name = "openai" },
     { name = "pymupdf" },
     { name = "scalar-fastapi" },
@@ -119,6 +120,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.116.1" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "llama-index", specifier = ">=0.13.3" },
+    { name = "llama-index-llms-siliconflow", specifier = ">=0.4.0" },
     { name = "openai", specifier = ">=1.102.0" },
     { name = "pymupdf", specifier = ">=1.26.4" },
     { name = "scalar-fastapi", specifier = ">=1.3.0" },
@@ -635,6 +637,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/20/59/4c414d79a21189d9db6de58ecbc297cd0f5ea121803b836bd134c67dd7a3/llama_index_llms_openai-0.5.4.tar.gz", hash = "sha256:9e36b6d2fc5f056b00ee655901b3bb7e7060b23f7b19439889fb78d696340f54", size = 24230, upload-time = "2025-08-16T22:41:17.408Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ad/62/aec65450b8d7ba723fa557884ac34d94b2b8f3876a54249c05d240a2be6c/llama_index_llms_openai-0.5.4-py3-none-any.whl", hash = "sha256:8d42fbfa56b5f281ad0dfcb2915916c188b5876625f9f8d27016b7dc4366cc24", size = 25357, upload-time = "2025-08-16T22:41:16.472Z" },
+]
+
+[[package]]
+name = "llama-index-llms-siliconflow"
+version = "0.4.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "aiohttp" },
+    { name = "llama-index-core" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/93/62/1bf2adcd4008b33d7c415156119865139775709756f91425a8b0dbc96f6e/llama_index_llms_siliconflow-0.4.0.tar.gz", hash = "sha256:7881a680350b945fe66005868872ec98eb7131a470b13027c09478af4571bb02", size = 7940, upload-time = "2025-07-30T20:58:42.047Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e0/50/244db4a55c86bd3ad2c1101c45963fcc4a9a3702307261999a19252ee6e4/llama_index_llms_siliconflow-0.4.0-py3-none-any.whl", hash = "sha256:10a379947e58ca110afa89389a59b6e756a03523ecafe16f40f4ee4f345edbd1", size = 7723, upload-time = "2025-07-30T20:58:41.324Z" },
 ]
 
 [[package]]

@@ -1,3 +1,4 @@
+import os
 import logging
 import httpx
 import pymupdf
@@ -29,6 +30,23 @@ def get_items_in_collection(collection_key: str):
     return [{"key": e["key"], "title": e["data"]["title"]} for e in res.json()]
 
 
+def find_pdf_file_in_path(path: str) -> str:
+    """在指定路径中查找PDF文件
+
+    理论上应该用Zotero api，但是这个方法更高效
+
+    Args:
+        path (str): 要查找的路径
+
+    Returns:
+        str: 找到的PDF文件的路径，如果未找到则返回None
+    """
+    for e in os.listdir(path):
+        if os.path.splitext(e)[1] == ".pdf":
+            return f"{path}/{e}"
+    return None
+
+
 def get_pdf_path_in_collection(collection_key: str):
     """
     获取文献集中文献的PDF文件路径
@@ -39,8 +57,27 @@ def get_pdf_path_in_collection(collection_key: str):
     Returns:
         list: 文献集中文献的PDF文件路径
     """
-    # TODO
-    return []
+    zotero_path = config["zotero_path"]
+    res = client.get(f"collections/{collection_key}/items")
+    ret = []
+    for e in res.json():
+        if "attachment" not in e["links"]:
+            continue
+        pdf_key = e["links"]["attachment"]["href"][-8:]
+        pdf_path = find_pdf_file_in_path(f"{zotero_path}/storage/{pdf_key}")
+        title = e["data"]["title"]
+        if not pdf_path:
+            logger.warning(f"PDF file of {title} not found. Skipping.")
+            continue
+        ret.append(
+            {
+                "key": e["key"],
+                "title": title,
+                "path": pdf_path,
+                "publication": e["data"].get("publicationTitle", ""),
+            }
+        )
+    return ret
 
 
 def get_pdf_text(pdf_path: str):
