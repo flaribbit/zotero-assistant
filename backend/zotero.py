@@ -31,7 +31,8 @@ def get_items_in_collection(collection_key: str):
 
 
 def find_pdf_file_in_path(path: str) -> str:
-    """在指定路径中查找PDF文件
+    """
+    在指定路径中查找PDF文件
 
     理论上应该用Zotero api，但是这个方法更高效
 

@@ -4,6 +4,7 @@ import uvicorn
 import logging
 import zotero
 import llm
+import database
 
 logger = logging.getLogger("backend")
 app = FastAPI(title="Zotero Assistant API")
@@ -28,7 +29,7 @@ def get_collections():
     return zotero.get_collections()
 
 
-@app.get("/collection/{collection_key}")
+@app.get("/collection")
 def get_collection(collection_key):
     """获取指定文献集中的所有文献"""
     return zotero.get_items_in_collection(collection_key)
@@ -47,9 +48,16 @@ def update_index():
     return {"message": "Index updated"}
 
 
-@app.get("/items/{item_id}")
-def get_item(item_id: int, q: str = None):
-    return {"item_id": item_id, "q": q}
+@app.get("/index_collection")
+def index_collection(collection_key: str):
+    """索引指定文献集中的所有文献"""
+    return database.index_collection(collection_key)
+
+
+@app.get("/semantic_search")
+def semantic_search(query: str, n_results: int = 10):
+    """语义搜索"""
+    return database.semantic_search(query, n_results)
 
 
 if __name__ == "__main__":
