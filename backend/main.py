@@ -44,7 +44,7 @@ def embedding_text(text: str):
 @app.get("/update_index")
 def update_index():
     """更新索引"""
-    # TODO: 更新全文搜索数据库和llamaindex索引
+    # TODO: 更新全文搜索数据库和llamaindex索引,并返回更新结果,,,
     return {"message": "Index updated"}
 
 
@@ -56,7 +56,7 @@ def index_collection(collection_key: str):
 
 @app.get("/semantic_search")
 def semantic_search(query: str, n_results: int = 10):
-    """语义搜索"""
+    """语义"""
     return database.semantic_search(query, n_results)
 
 
