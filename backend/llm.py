@@ -43,3 +43,31 @@ def split_text(text: str, chunk_size: int = 1024, overlap: int = 100):
         if i + chunk_size >= len(tokens):
             break
     return chunks
+
+
+def enhance_query(query: str) -> list[str]:
+    """
+    增强查询
+
+    Args:
+        query (str): 原始查询
+
+    Returns:
+        list[str]: 增强后的查询列表
+    """
+    # TODO：实现查询增强逻辑
+    return []
+
+
+def get_full_prompt(query: str, knowledge: str) -> str:
+    """
+    根据查询和知识生成完整提示词
+
+    Args:
+        query (str): 用户查询
+        knowledge (str): 相关知识
+
+    Returns:
+        str: 增强的提示词
+    """
+    return config["prompt"]["ask"].format(query=query, knowledge=knowledge)

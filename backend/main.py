@@ -54,10 +54,23 @@ def index_collection(collection_key: str):
     return database.index_collection(collection_key)
 
 
-@app.get("/semantic_search")
-def semantic_search(query: str, n_results: int = 10):
+@app.post("/semantic_search")
+def semantic_search(query: list[str], n_results: int = 10):
     """语义搜索"""
     return database.semantic_search(query, n_results)
+
+
+@app.post("/get_full_prompt")
+def get_full_prompt(query: str):
+    """根据用户查询生成完整提示词"""
+    knowledge = database.semantic_search([query], n_results=10)
+    return llm.get_full_prompt(query, knowledge)
+
+
+@app.get("/get_document")
+def get_document(key: str):
+    """根据key获取文档内容"""
+    return database.get_document_by_key(key)
 
 
 if __name__ == "__main__":
