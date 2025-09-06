@@ -10,6 +10,11 @@ client = chromadb.PersistentClient(path="./data/chroma")
 collection = client.get_or_create_collection(name="zotero")
 
 
+def tqdm_info(msg):
+    if logger.isEnabledFor(logging.INFO):
+        tqdm.write(msg)
+
+
 def index_collection(collection_key):
     """
     索引指定文献集中的所有文献
@@ -23,7 +28,13 @@ def index_collection(collection_key):
         pdf_key = e["key"]
         pdf_path = e["path"]
         mod = int(os.path.getmtime(pdf_path))
-        # TODO：检查是否已经索引过，且自从上次索引后没有修改过
+        res = collection.get(where={"key": pdf_key}, include=["metadatas"])
+        ids = res["ids"]
+        if ids:
+            if res["metadatas"][0]["mod"] >= mod:
+                continue
+            else:
+                collection.delete(ids=ids)
         text = zotero.get_pdf_text(pdf_path)
         chunks = llm.split_text(text)
         count = len(chunks)
@@ -51,3 +62,17 @@ def semantic_search(query: str, n_results: int = 10):
     query_embedding = llm.get_text_embedding(query)[0]["embedding"]
     results = collection.query(query_embeddings=[query_embedding], n_results=n_results)
     return results
+
+
+if __name__ == "__main__":
+    modtime = 1750303335
+    res = collection.get(
+        where={
+            "$and": [
+                {"key": "U3ZKVT8T"},
+                {"mod": {"$lt": modtime}},
+            ]
+        },
+        include=[],
+    )
+    print(res)
