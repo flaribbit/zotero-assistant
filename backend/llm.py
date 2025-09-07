@@ -5,9 +5,13 @@ import logging
 import json
 import re
 
-client = OpenAI(
-    base_url="https://api.siliconflow.cn/v1",
-    api_key=config["siliconflow"]["api_key"],
+embedding_client = OpenAI(
+    base_url=config["embedding"]["base_url"],
+    api_key=config["embedding"]["api_key"],
+)
+chat_client = OpenAI(
+    base_url=config["chat"]["base_url"],
+    api_key=config["chat"]["api_key"],
 )
 logger = logging.getLogger("backend")
 
@@ -22,7 +26,7 @@ def get_text_embedding(text: str | list[str]):
     Returns:
         list: 文本的嵌入表示
     """
-    response = client.embeddings.create(model="Qwen/Qwen3-Embedding-0.6B", input=text).model_dump()
+    response = embedding_client.embeddings.create(model=config["embedding"]["model"], input=text).model_dump()
     return response["data"]
 
 
@@ -38,7 +42,7 @@ def split_text(text: str, chunk_size: int = 1024, overlap: int = 100):
     Returns:
         list: 文本块列表
     """
-    tokenizer: Tokenizer = Tokenizer.from_pretrained("Qwen/Qwen3-Embedding-0.6B")
+    tokenizer: Tokenizer = Tokenizer.from_pretrained(config["embedding"]["tokenizer"])
     tokens = tokenizer.encode(text).ids
     chunks = []
     for i in range(0, len(tokens), chunk_size - overlap):
@@ -60,8 +64,8 @@ def enhance_query(query: str) -> list[str]:
     """
     query = config["prompt"]["enhance"].format(query=query)
     logger.info(f"增强查询完整提示词: {query}")
-    response = client.chat.completions.create(
-        model="deepseek-ai/DeepSeek-V3",
+    response = chat_client.chat.completions.create(
+        model=config["chat"]["model"],
         messages=[{"role": "user", "content": query}],
         temperature=0.8,
         top_p=0.9,
