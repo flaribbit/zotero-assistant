@@ -1,5 +1,7 @@
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 from scalar_fastapi import get_scalar_api_reference
+import json
 import uvicorn
 import logging
 import zotero
@@ -12,7 +14,16 @@ app = FastAPI(title="Zotero Assistant API")
 
 @app.get("/")
 def get_root():
-    return {"message": "Hello, FastAPI!"}
+    content = """<html>
+<head>
+    <title>Zotero Assistant API</title>
+</head>
+<body>
+    <h1>Zotero Assistant API</h1>
+    <p>Welcome to the Zotero Assistant API. You can find the API documentation <a href="/scalar">here</a>.</p>
+</body>
+</html>"""
+    return HTMLResponse(content=content)
 
 
 @app.get("/scalar", include_in_schema=False)
@@ -63,8 +74,9 @@ def semantic_search(query: list[str], n_results: int = 10):
 @app.post("/get_full_prompt")
 def get_full_prompt(query: str):
     """根据用户查询生成完整提示词"""
-    knowledge = database.semantic_search([query], n_results=10)
-    return llm.get_full_prompt(query, knowledge)
+    enhanced_query = llm.enhance_query(query)
+    knowledge = database.semantic_search(enhanced_query, n_results=10)
+    return llm.get_full_prompt(query, json.dumps(knowledge, ensure_ascii=False))
 
 
 @app.get("/get_document")

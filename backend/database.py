@@ -73,8 +73,11 @@ def semantic_search(queries: list[str], n_results: int = 10):
     Returns:
         list: 搜索结果
     """
+    logger.info(f"获取查询的嵌入表示: {queries}")
     query_embeddings = [e["embedding"] for e in llm.get_text_embedding(queries)]
+    logger.info("在数据库中查询嵌入表示")
     results = collection.query(query_embeddings=query_embeddings, n_results=n_results)
+    logger.info("处理查询结果")
     resmap = {}
     for i in range(len(queries)):
         ids = results["ids"][i]
@@ -94,6 +97,7 @@ def semantic_search(queries: list[str], n_results: int = 10):
             else:
                 resmap[ids[j]] = item
     merged = list(resmap.values())
+    logger.info(f"合并后的结果数量: {len(merged)}")
     merged.sort(key=lambda x: x["distance"])
     merged = merged[: n_results * 2]
     return merged
