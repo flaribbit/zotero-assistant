@@ -7,6 +7,7 @@ interface SearchItem {
   distance: number
   title: string
   publication: string
+  pdf_key: string
 }
 
 const query = ref('')
@@ -23,14 +24,36 @@ async function doSearch() {
   loading.value = true
   error.value = null
   try {
-    const res = await fetch('/api/semantic_search', {
+    const res = await fetch('/api/semantic_search?n_results=40', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify([query.value]),
     })
     if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
-    const data = (await res.json()) as SearchItem[]
-    results.value = data
+    // semantic_search now returns items without title/publication/pdf_key
+    const data = (await res.json()) as Array<{ document: string; key: string; distance: number }>
+    // Show initial results immediately
+    results.value = data.map(item => ({ ...item, title: '正在获取……', publication: '正在获取……', pdf_key: '' }))
+
+    // For each item, fetch details asynchronously and merge into results
+    for (const [i, item] of data.entries()) {
+      fetch(`/api/item/${encodeURIComponent(item.key)}`)
+        .then(async r => {
+          if (!r.ok) throw new Error(`${r.status} ${r.statusText}`)
+          const info = await r.json()
+          // info = { title, pdf_key, publication }
+          // Update the corresponding item in results
+          results.value[i] = {
+            ...results.value[i],
+            title: info.title ?? '',
+            publication: info.publication ?? '',
+            pdf_key: info.pdf_key ?? '',
+          }
+        })
+        .catch(() => {
+          // If error, leave fields blank
+        })
+    }
   } catch (err: any) {
     error.value = err?.message ?? String(err)
   } finally {
@@ -55,25 +78,27 @@ const openItem = (key: string) => {
     <div v-if="loading" class="loading">搜索中…</div>
     <div v-else-if="error" class="error">错误：{{ error }}</div>
 
-    <ul v-else class="results">
-      <li v-if="results.length === 0" class="no-results">未找到结果</li>
-      <li v-for="item in results" :key="item.key" class="result-item">
-        <div class="result-main">
-          <div class="title">{{ item.title }}</div>
-          <div class="publication">{{ item.publication }}</div>
-        </div>
-
-        <div class="result-side">
-          <div class="distance">距离: {{ item.distance.toFixed(3) }}</div>
-          <div class="actions">
-            <a :href="`zotero://select/library/items/${encodeURIComponent(item.key)}`" class="button">查看</a>
-            <a @click.prevent="openItem(item.key)" class="button">打开</a>
+    <div v-else class="results-grid">
+      <div v-if="results.length === 0" class="no-results">未找到结果</div>
+      <div v-for="item in results" :key="item.key" class="result-card">
+        <div class="card-header">
+          <div class="card-title">{{ item.title || '无标题' }}</div>
+          <div class="card-meta">
+            <span class="card-publication" v-if="item.publication">{{ item.publication }}</span>
+            <span class="card-distance">距离: {{ item.distance.toFixed(3) }}</span>
           </div>
         </div>
-
-        <div class="document">{{ item.document }}</div>
-      </li>
-    </ul>
+        <div class="card-body">
+          <div class="card-document">{{ item.document }}</div>
+        </div>
+        <div class="card-actions">
+          <a :href="`zotero://select/library/items/${encodeURIComponent(item.key)}`" class="action-btn"
+            title="在Zotero中查看">查看</a>
+          <a v-if="item.pdf_key" href="###" @click.prevent="openItem(item.pdf_key)" class="action-btn"
+            title="打开PDF">打开PDF</a>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -108,92 +133,125 @@ const openItem = (key: string) => {
   color: #a33
 }
 
-.results {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.2rem;
+  margin-top: 1rem;
+}
+
+.result-card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  padding: 1.1rem 1.2rem 0.8rem 1.2rem;
+  transition: box-shadow 0.2s;
 }
 
-.result-item {
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 6px;
-  padding: 0.6rem;
+.result-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border-color: #b3d4fc;
+}
+
+.card-header {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.3rem;
+  margin-bottom: 0.5rem;
 }
 
-.result-main {
+.card-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1a2a3a;
+  margin-bottom: 0.1rem;
+  word-break: break-all;
+}
+
+.card-meta {
   display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.title {
-  font-weight: 600;
-  font-size: 1.02rem;
-}
-
-.publication {
-  color: #444;
-  font-size: 0.95rem;
-}
-
-.document {
-  font-size: 0.85rem;
-  color: #333;
-  opacity: 0.9;
-}
-
-.result-side {
-  display: flex;
-  justify-content: space-between;
+  gap: 1.2rem;
+  font-size: 0.92rem;
+  color: #4a5a6a;
   align-items: center;
-  gap: 0.5rem;
 }
 
-.distance {
-  font-size: 0.75rem;
-  color: #666;
+.card-publication {
+  background: #eaf6ff;
+  color: #2176c7;
+  padding: 0.08rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.88rem;
 }
 
-.actions .button {
+.card-distance {
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.card-body {
+  margin-bottom: 0.7rem;
+}
+
+.card-document {
+  font-size: 0.97rem;
+  color: #222;
+  opacity: 0.96;
+  line-height: 1.7;
+  word-break: break-word;
+  max-height: calc(1.7em * 10);
+  /* 10 lines */
+  overflow: hidden;
+  position: relative;
+  transition: max-height 0.2s;
+}
+
+.card-document::after {
+  content: '...';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, #fff 80%);
+  padding-left: 1em;
+  font-weight: bold;
+  color: #888;
+  display: block;
+}
+
+.card-actions {
+  display: flex;
+  gap: 0.7rem;
+  margin-top: 0.2rem;
+}
+
+.action-btn {
   display: inline-block;
-  padding: 0.28rem 0.5rem;
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.04);
-  color: inherit;
+  padding: 0.32rem 0.8rem;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #eaf6ff 0%, #f7fbff 100%);
+  color: #2176c7;
   text-decoration: none;
-  font-size: 0.9rem;
-  margin-left: 0.25rem;
+  font-size: 0.97rem;
+  font-weight: 500;
+  border: 1px solid #cbe7ff;
+  transition: background 0.2s, color 0.2s;
 }
 
-.actions .button:hover {
-  background: rgba(0, 0, 0, 0.06);
+.action-btn:hover {
+  background: linear-gradient(90deg, #d0eaff 0%, #eaf6ff 100%);
+  color: #174a7c;
+  border-color: #90cdf4;
 }
 
-@media (min-width: 640px) {
-  .result-item {
-    flex-direction: row;
-    align-items: flex-start;
-  }
-
-  .result-main {
-    flex: 1 1 auto;
-  }
-
-  .result-side {
-    flex: 0 0 160px;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-  }
-
-  .document {
-    margin-top: 0.25rem;
-  }
+.no-results {
+  grid-column: 1/-1;
+  text-align: center;
+  color: #888;
+  font-size: 1.05rem;
+  padding: 1.5rem 0;
 }
 </style>
