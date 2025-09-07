@@ -48,31 +48,60 @@ def index_collection(collection_key):
     return {"message": f"Indexed {len(items)} items in collection {collection_key}"}
 
 
-def semantic_search(query: str, n_results: int = 10):
+def get_document_by_key(key: str):
     """
-    语义搜索
+    根据key获取文档内容
 
     Args:
-        query (str): 查询文本
+        key (str): 文档的唯一标识符
+
+    Returns:
+        dict: 文档内容和元数据
+    """
+    # TODO
+    return None
+
+
+def semantic_search(queries: list[str], n_results: int = 10):
+    """
+    语义搜索，合并所有查询结果并按距离升序排列
+
+    Args:
+        queries (list[str]): 查询文本列表
         n_results (int): 返回的结果数量
 
     Returns:
         list: 搜索结果
     """
-    query_embedding = llm.get_text_embedding(query)[0]["embedding"]
-    results = collection.query(query_embeddings=[query_embedding], n_results=n_results)
-    return results
+    logger.info(f"获取查询的嵌入表示: {queries}")
+    query_embeddings = [e["embedding"] for e in llm.get_text_embedding(queries)]
+    logger.info("在数据库中查询嵌入表示")
+    results = collection.query(query_embeddings=query_embeddings, n_results=n_results)
+    logger.info("处理查询结果")
+    resmap = {}
+    for i in range(len(queries)):
+        ids = results["ids"][i]
+        documents = results["documents"][i]
+        # metadatas = results["metadatas"][i]  # 用不到
+        distances = results["distances"][i]
+        for j in range(len(ids)):
+            # 如果id已经存在，取距离更小的那个
+            item = {
+                "document": documents[j],
+                "key": ids[j],
+                "distance": distances[j],
+            }
+            if ids[j] in resmap:
+                if distances[j] < resmap[ids[j]]["distance"]:
+                    resmap[ids[j]] = item
+            else:
+                resmap[ids[j]] = item
+    merged = list(resmap.values())
+    logger.info(f"合并后的结果数量: {len(merged)}")
+    merged.sort(key=lambda x: x["distance"])
+    merged = merged[: n_results * 2]
+    return merged
 
 
 if __name__ == "__main__":
-    modtime = 1750303335
-    res = collection.get(
-        where={
-            "$and": [
-                {"key": "U3ZKVT8T"},
-                {"mod": {"$lt": modtime}},
-            ]
-        },
-        include=[],
-    )
-    print(res)
+    pass
