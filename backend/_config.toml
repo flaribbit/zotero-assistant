@@ -1,7 +1,15 @@
-zotero_path = ""
+zotero_path = "XXXXXX"
 
-[siliconflow]
-api_key = "你的api key"
+[embedding]
+model = "dengcao/Qwen3-Embedding-0.6B:F16"
+tokenizer = "Qwen/Qwen3-Embedding-0.6B"
+base_url = "XXXXXX"
+api_key = "ollama"
+
+[chat]
+model = "deepseek-ai/DeepSeek-V3"
+base_url = "https://api.siliconflow.cn/v1"
+api_key = "sk-XXXXXX"
 
 [prompt]
 enhance = """用户发出了查询请求：
