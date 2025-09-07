@@ -1,85 +1,111 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
+import { RouterView, RouterLink } from 'vue-router'
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
+  <div class="app-layout">
+    <aside class="sidebar">
+    </aside>
 
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
+    <section class="main-area">
+      <header class="top-nav">
+        <!-- top nav for switching routes as requested -->
+        <nav>
+          <ul>
+            <li>
+              <RouterLink to="/">全文搜索</RouterLink>
+            </li>
+            <li>
+              <RouterLink to="/semantic">语义搜索</RouterLink>
+            </li>
+            <li>
+              <RouterLink to="/llm">LLM问答</RouterLink>
+            </li>
+          </ul>
+        </nav>
+      </header>
 
-      <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-      </nav>
-    </div>
-  </header>
-
-  <RouterView />
+      <main class="content">
+        <!-- nested routes render here -->
+        <RouterView />
+      </main>
+    </section>
+  </div>
 </template>
 
-<style scoped>
-header {
-  line-height: 1.5;
-  max-height: 100vh;
+<style>
+body {
+  margin: 0;
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
+/* Layout for App: left sidebar, top navigation in main area, and scrollable main content */
+.app-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  /* sidebar + main */
+  grid-template-rows: 1fr;
+  gap: 1rem;
+  height: 100vh;
+  /* full viewport so content can scroll internally */
 }
 
-nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
+.sidebar {
+  background: rgba(0, 0, 0, 0.03);
+  padding: 1rem;
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+  overflow: auto;
+  /* allow sidebar to scroll if content grows */
 }
 
-nav a.router-link-exact-active {
-  color: var(--color-text);
+.main-area {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  /* allow children with overflow to behave correctly */
 }
 
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
+.top-nav {
+  background: transparent;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 0.5rem 1rem;
+  flex: 0 0 auto;
 }
 
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
+.top-nav nav ul {
+  display: flex;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  align-items: center;
 }
 
-nav a:first-of-type {
-  border: 0;
+.content {
+  padding: 1rem;
+  overflow: auto;
+  /* scroll content inside main-area */
+  flex: 1 1 0%;
+  min-height: 0;
+  /* required for correct scrolling in flex containers */
 }
 
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
+/* Responsive: stack sidebar above main on small screens */
+@media (max-width: 768px) {
+  .app-layout {
+    grid-template-columns: 1fr;
+    grid-auto-rows: auto 1fr;
+    height: auto;
   }
 
-  .logo {
-    margin: 0 2rem 0 0;
+  .sidebar {
+    border-right: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    width: 100%;
   }
 
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
+  .top-nav nav ul {
     flex-wrap: wrap;
-  }
-
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-
-    padding: 1rem 0;
-    margin-top: 1rem;
+    gap: 0.5rem;
   }
 }
 </style>
