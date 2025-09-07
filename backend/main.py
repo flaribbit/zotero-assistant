@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
 from fastapi.responses import HTMLResponse
 from scalar_fastapi import get_scalar_api_reference
 import json
@@ -10,6 +10,7 @@ import database
 
 logger = logging.getLogger("backend")
 app = FastAPI(title="Zotero Assistant API")
+router = APIRouter(prefix="/api")
 
 
 @app.get("/")
@@ -34,44 +35,44 @@ async def scalar_html():
     )
 
 
-@app.get("/collections")
+@router.get("/collections")
 def get_collections():
     """获取所有文献集"""
     return zotero.get_collections()
 
 
-@app.get("/collection")
+@router.get("/collection")
 def get_collection(collection_key):
     """获取指定文献集中的所有文献"""
     return zotero.get_items_in_collection(collection_key)
 
 
-@app.post("/embedding_text")
+@router.post("/embedding_text")
 def embedding_text(text: str):
     """获取文本的嵌入表示"""
     return llm.get_text_embedding(text)
 
 
-@app.get("/update_index")
+@router.get("/update_index")
 def update_index():
     """更新索引"""
     # TODO: 更新全文搜索数据库和llamaindex索引
     return {"message": "Index updated"}
 
 
-@app.get("/index_collection")
+@router.get("/index_collection")
 def index_collection(collection_key: str):
     """索引指定文献集中的所有文献"""
     return database.index_collection(collection_key)
 
 
-@app.post("/semantic_search")
+@router.post("/semantic_search")
 def semantic_search(query: list[str], n_results: int = 10):
     """语义搜索"""
     return database.semantic_search(query, n_results)
 
 
-@app.post("/get_full_prompt")
+@router.post("/get_full_prompt")
 def get_full_prompt(query: str):
     """根据用户查询生成完整提示词"""
     enhanced_query = llm.enhance_query(query)
@@ -79,10 +80,14 @@ def get_full_prompt(query: str):
     return llm.get_full_prompt(query, json.dumps(knowledge, ensure_ascii=False))
 
 
-@app.get("/get_document")
+@router.get("/get_document")
 def get_document(key: str):
     """根据key获取文档内容"""
     return database.get_document_by_key(key)
+
+
+# include the API router
+app.include_router(router)
 
 
 if __name__ == "__main__":
