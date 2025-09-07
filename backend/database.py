@@ -82,13 +82,14 @@ def semantic_search(queries: list[str], n_results: int = 10):
     for i in range(len(queries)):
         ids = results["ids"][i]
         documents = results["documents"][i]
-        # metadatas = results["metadatas"][i]  # 用不到
+        metadatas = results["metadatas"][i]
         distances = results["distances"][i]
         for j in range(len(ids)):
             # 如果id已经存在，取距离更小的那个
             item = {
                 "document": documents[j],
-                "key": ids[j],
+                "id": ids[j],
+                "key": metadatas[j]["key"],
                 "distance": distances[j],
             }
             if ids[j] in resmap:
@@ -101,6 +102,21 @@ def semantic_search(queries: list[str], n_results: int = 10):
     merged.sort(key=lambda x: x["distance"])
     merged = merged[: n_results * 2]
     return merged
+
+
+def fulltext_search(query: str, n_results: int = 20):
+    """
+    全文搜索
+
+    Args:
+        query (str): 查询文本
+        n_results (int): 返回的结果数量
+
+    Returns:
+        list: 搜索结果
+    """
+    # TODO
+    return []
 
 
 if __name__ == "__main__":

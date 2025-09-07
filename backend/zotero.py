@@ -81,6 +81,46 @@ def get_pdf_path_in_collection(collection_key: str):
     return ret
 
 
+def get_item_info(item_key: str):
+    """
+    获取文献的详细信息
+
+    Args:
+        item_key (str): 文献的唯一标识符
+
+    Returns:
+        dict: 文献的详细信息
+    """
+    res = client.get(f"items/{item_key}")
+    if res.status_code != 200:
+        return None
+    data = res.json()
+    pdf_key = None
+    if "attachment" in data["links"]:
+        pdf_key = data["links"]["attachment"]["href"][-8:]
+    info = {
+        "title": data["data"].get("title", ""),
+        "pdf_key": pdf_key,
+        "publication": data["data"].get("publicationTitle", ""),
+    }
+    return info
+
+
+def open_pdf(pdf_key: str):
+    """
+    使用用户默认的PDF阅读器打开PDF文件
+
+    Args:
+        pdf_key (str): PDF文件的唯一标识符
+    """
+    zotero_path = config["zotero_path"]
+    pdf_path = find_pdf_file_in_path(f"{zotero_path}/storage/{pdf_key}")
+    if not pdf_path:
+        logger.warning(f"PDF file of {pdf_key} not found. Skipping.")
+        return
+    os.startfile(pdf_path)
+
+
 def get_pdf_text(pdf_path: str):
     """
     获取PDF文件的文本内容

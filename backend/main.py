@@ -86,6 +86,19 @@ def get_document(key: str):
     return database.get_document_by_key(key)
 
 
+@router.get("/item/{key}")
+def get_item_info(key: str):
+    """根据key获取文献的详细信息"""
+    return zotero.get_item_info(key)
+
+
+@router.get("/open/{key}")
+def open_pdf(key: str):
+    """使用用户默认的PDF阅读器打开PDF文件"""
+    zotero.open_pdf(key)
+    return {"message": f"Opened PDF {key}"}
+
+
 # include the API router
 app.include_router(router)
 
