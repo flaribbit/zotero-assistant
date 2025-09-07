@@ -116,11 +116,45 @@ const openItem = (key: string) => {
 
 .search-box input {
   flex: 1 1 auto;
-  padding: 0.5rem;
+  padding: 0.6rem 1rem;
+  border: 1.5px solid #b3d4fc;
+  border-radius: 8px;
+  font-size: 1.05rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+  box-shadow: 0 1px 4px rgba(33, 118, 199, 0.07);
+}
+
+.search-box input:focus {
+  border-color: #2176c7;
+  box-shadow: 0 2px 8px rgba(33, 118, 199, 0.13);
 }
 
 .search-box button {
-  padding: 0.45rem 0.8rem;
+  padding: 0.32rem 0.8rem;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #eaf6ff 0%, #f7fbff 100%);
+  color: #2176c7;
+  font-size: 0.97rem;
+  font-weight: 500;
+  border: 1px solid #cbe7ff;
+  box-shadow: none;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.search-box button:disabled {
+  background: #eaf6ff;
+  color: #888;
+  cursor: not-allowed;
+  border-color: #eaf6ff;
+  box-shadow: none;
+}
+
+.search-box button:hover:not(:disabled) {
+  background: linear-gradient(90deg, #d0eaff 0%, #eaf6ff 100%);
+  color: #174a7c;
+  border-color: #90cdf4;
 }
 
 .loading,
@@ -132,7 +166,6 @@ const openItem = (key: string) => {
 .error {
   color: #a33
 }
-
 
 .results-grid {
   display: grid;
