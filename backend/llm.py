@@ -1,4 +1,4 @@
-from transformers import AutoTokenizer
+from tokenizers import Tokenizer
 from openai import OpenAI
 from config import config
 import logging
@@ -38,12 +38,12 @@ def split_text(text: str, chunk_size: int = 1024, overlap: int = 100):
     Returns:
         list: 文本块列表
     """
-    tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-Embedding-0.6B")
-    tokens = tokenizer.tokenize(text)
+    tokenizer: Tokenizer = Tokenizer.from_pretrained("Qwen/Qwen3-Embedding-0.6B")
+    tokens = tokenizer.encode(text).ids
     chunks = []
     for i in range(0, len(tokens), chunk_size - overlap):
         chunk = tokens[i : i + chunk_size]
-        chunks.append(tokenizer.convert_tokens_to_string(chunk))
+        chunks.append(tokenizer.decode(chunk))
         if i + chunk_size >= len(tokens):
             break
     return chunks
