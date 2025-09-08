@@ -1,5 +1,5 @@
 from fastapi import FastAPI, APIRouter
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from scalar_fastapi import get_scalar_api_reference
 import json
 import uvicorn
@@ -77,7 +77,7 @@ def get_full_prompt(query: str):
     """根据用户查询生成完整提示词"""
     enhanced_query = llm.enhance_query(query)
     knowledge = database.semantic_search(enhanced_query, n_results=10)
-    return llm.get_full_prompt(query, json.dumps(knowledge, ensure_ascii=False))
+    return {"prompt": llm.get_full_prompt(query, json.dumps(knowledge, ensure_ascii=False))}
 
 
 @router.get("/get_document")
@@ -97,6 +97,14 @@ def open_pdf(key: str):
     """使用用户默认的PDF阅读器打开PDF文件"""
     zotero.open_pdf(key)
     return {"message": f"Opened PDF {key}"}
+
+
+@router.post("/completion")
+def chat_completion(messages: list[dict], temperature: float = 0.8, top_p: float = 0.9) -> StreamingResponse:
+    """获取聊天补全"""
+    return StreamingResponse(
+        llm.streaming_chat_completion(messages, temperature, top_p), media_type="text/event-stream"
+    )
 
 
 # include the API router

@@ -85,6 +85,35 @@ def enhance_query(query: str) -> list[str]:
     return [query]
 
 
+def streaming_chat_completion(messages: list[dict], temperature: float = 0.8, top_p: float = 0.9):
+    """
+    流式传输聊天补全
+
+    Args:
+        messages (list[dict]): 聊天消息列表
+        temperature (float): 采样温度
+        top_p (float): nucleus采样的累积概率阈值
+
+    Yields:
+        str: 聊天补全的增量内容
+    """
+    response = chat_client.chat.completions.create(
+        model=config["chat"]["model"],
+        messages=messages,
+        temperature=temperature,
+        top_p=top_p,
+        stream=True,
+    )
+    logger.info("开始流式传输聊天")
+    for chunk in response:
+        if not chunk.choices:
+            continue
+        content = chunk.choices[0].delta.content
+        if content:
+            yield content
+    logger.info("流式传输聊天结束")
+
+
 def get_full_prompt(query: str, knowledge: str) -> str:
     """
     根据查询和知识生成完整提示词
