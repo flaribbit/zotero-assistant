@@ -101,8 +101,8 @@ app.include_router(router)
 app.mount("/", StaticFiles(directory=config["static_path"]), name="static")
 
 
-@app.get("/{full_path:path}", include_in_schema=False)
-def catch_all(full_path: str):
+@app.exception_handler(404)
+def catch_all(request, exc):
     """Catch-all route to serve Vue Router paths."""
     return FileResponse(config["static_path"] + "/index.html")
 
