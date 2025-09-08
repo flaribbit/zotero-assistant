@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, inject } from 'vue'
+import type { Ref } from 'vue'
 import { marked } from 'marked'
 
 const userInput = ref('')
@@ -9,6 +10,7 @@ const loading = ref(false)
 const statusMessage = ref('')
 const dialogVisible = ref(false)
 const dialogContent = ref({ title: '', publication: '', key: '', pdf_key: '', text: '' })
+const selectedKeys = inject('selectedKeys') as Ref<string[]>
 
 async function copyToClipboard(text: string) {
   try {
@@ -27,11 +29,12 @@ async function sendQuery() {
   augmentedPrompt.value = ''
   statusMessage.value = '正在获取增强的 Prompt...'
 
-
   try {
     // Step 1: Fetch augmented prompt
     const promptRes = await fetch(`/api/get_full_prompt?query=${encodeURIComponent(userInput.value)}`, {
-      method: 'POST'
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(selectedKeys.value),
     })
     if (!promptRes.ok) statusMessage.value = `Error fetching prompt: ${promptRes.status} ${promptRes.statusText}`
 
@@ -69,10 +72,6 @@ async function sendQuery() {
     loading.value = false
     statusMessage.value = ''
   }
-}
-
-function renderMarkdown(content: string) {
-  return marked(content)
 }
 
 async function handleLinkClick(key: string) {
@@ -147,8 +146,7 @@ function openItem(key: string) {
     <div class="dialog">
       <h3>{{ dialogContent.title }}</h3>
       <p><strong>Publication:</strong> {{ dialogContent.publication }}</p>
-      <p><strong>Key:</strong> {{ dialogContent.key }}</p>
-      <p>{{ dialogContent.text }}</p>
+      <p class="dialog-text">{{ dialogContent.text }}</p>
       <div class="dialog-actions">
         <a :href="`zotero://select/library/items/${encodeURIComponent(dialogContent.key)}`" class="action-btn"
           title="在Zotero中查看">查看</a>
@@ -235,14 +233,17 @@ button:disabled {
   padding: 1.5rem;
   border-radius: 8px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-  max-width: 500px;
-  width: 100%;
+  width: 80%;
 }
 
 .dialog-actions {
   display: flex;
   gap: 0.5rem;
   margin-top: 1rem;
+}
+
+.dialog-text {
+  font-size: 0.9rem;
 }
 
 .action-btn {

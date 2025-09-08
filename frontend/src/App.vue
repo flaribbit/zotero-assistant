@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { RouterView, RouterLink } from 'vue-router'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, provide } from 'vue'
 
 interface Collection {
   key: string
@@ -28,9 +28,16 @@ async function loadCollections() {
   }
 }
 
+provide('selectedKeys', selectedKeys)
+
 onMounted(() => {
   loadCollections()
 })
+
+function toggleAllCollections(event: Event) {
+  const target = event.target as HTMLInputElement;
+  selectedKeys.value = target.checked ? collections.value.map(c => c.key) : [];
+}
 </script>
 
 <template>
@@ -39,10 +46,11 @@ onMounted(() => {
       <div class="collections">
         <div class="collections-head">
           <h3>Collections</h3>
-          <div class="toolbar">
-            <button type="button" @click="selectedKeys = collections.map(c => c.key)">全选</button>
-            <button type="button" @click="selectedKeys = []">清除</button>
-          </div>
+          <label>
+            <input type="checkbox" :checked="selectedKeys.length === collections.length"
+              @change="toggleAllCollections" />
+            全选
+          </label>
         </div>
 
         <div v-if="loading" class="loading">加载中…</div>
@@ -168,17 +176,12 @@ body {
   font-size: 1rem;
 }
 
-.toolbar button {
-  background: transparent;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  padding: 0.15rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.85rem;
+label {
   cursor: pointer;
 }
 
-.toolbar button:hover {
-  background: rgba(0, 0, 0, 0.03);
+input[type="checkbox"] {
+  margin-right: 0.5rem;
 }
 
 .loading {

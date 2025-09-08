@@ -15,16 +15,21 @@ def tqdm_info(msg):
         tqdm.write(msg)
 
 
-def index_collection(collection_key):
+def index_collections(collection_keys: list[str]):
     """
     索引指定文献集中的所有文献
 
     Args:
-        collection_key (str): 文献集的唯一标识符
+        collection_keys (list[str]): 文献集的唯一标识符列表
     """
-    items = zotero.get_pdf_path_in_collection(collection_key)
-    logger.info(f"Indexing collection {collection_key} with {len(items)} items")
-    for e in tqdm(items):
+    item_keys = {}
+    for key in collection_keys:
+        items = zotero.get_pdf_path_in_collection(key)
+        item_keys.update({e["key"]: e for e in items})
+    logger.info(f"Indexing collections {collection_keys} with {len(item_keys)} items")
+    item_keys = list(item_keys.values())
+    for i, e in tqdm(enumerate(item_keys)):
+        yield f"正在索引 {i + 1}/{len(item_keys)}"
         pdf_key = e["key"]
         pdf_path = e["path"]
         mod = int(os.path.getmtime(pdf_path))
@@ -45,67 +50,36 @@ def index_collection(collection_key):
             ids=[f"{pdf_key}_{i}" for i in range(count)],
             embeddings=embeddings,
         )
-    return {"message": f"Indexed {len(items)} items in collection {collection_key}"}
+    logger.info("索引完成")
+    return "已完成！"
 
 
-# def get_document_by_key(key: str):
-#     """
-#     根据key获取文档内容
-
-#     Args:
-#         key (str): 文档的唯一标识符
-
-#     Returns:
-#         dict: 文档内容和元数据
-#     """
-#     # TODO
-#     return None
-
-def get_document_by_key(key: str, merge: bool = True):
+def get_document_by_key(key: str):
     """
-    根据key获取文档内容
+    根据key获取文档内容和信息
 
     Args:
-        key (str): 文档的唯一标识符
-        merge (bool): 是否合并所有分块文本为一个整体
-                      - True: 返回拼接后的完整文本
-                      - False: 返回按分块的文本列表
-
+        key (str): chromadb中存储的id，格式为"{item_key}_{chunk_index}"
     Returns:
-        dict: 包含文档内容、分块信息和元数据
+        dict: 包含文档内容和信息的字典
     """
-    res = collection.get(where={"key": key}, include=["documents", "metadatas", "ids"])
-
-    if not res["ids"]:
-        return {
-            "message": f"Document with key {key} not found",
-            "content": None,
-            "metadata": None,
-            "chunks": [],
-        }
-
-    documents = res["documents"]  # list[str]
-    metadata = res["metadatas"][0]  # 取第一个即可，其他分块相同
-
-    if merge:
-        full_text = "\n".join(documents)
-        return {
-            "key": key,
-            "content": full_text,
-            "metadata": metadata,
-            "chunks": documents,
-        }
-    else:
-        return {
-            "key": key,
-            "content": None,  # 不拼接
-            "metadata": metadata,
-            "chunks": documents,
-        }
+    res = collection.get(ids=[key])
+    print(res)
+    item_key = key.split("_")[0]
+    item = zotero.get_item_info(item_key)
+    title = item["title"]
+    publication = item["publication"]
+    pdf_key = item["pdf_key"]
+    return {
+        "key": item_key,
+        "pdf_key": pdf_key,
+        "title": title,
+        "publication": publication,
+        "text": res["documents"][0],
+    }
 
 
-
-def semantic_search(queries: list[str], n_results: int = 10):
+def semantic_search(queries: list[str], collections: list[str], n_results: int = 10):
     """
     语义搜索，合并所有查询结果并按距离升序排列
 
@@ -118,8 +92,17 @@ def semantic_search(queries: list[str], n_results: int = 10):
     """
     logger.info(f"获取查询的嵌入表示: {queries}")
     query_embeddings = [e["embedding"] for e in llm.get_text_embedding(queries)]
+    logger.info("获取指定文献集中的所有文献")
+    keys = []
+    for c in collections:
+        res = zotero.get_items_in_collection(c)
+        keys.extend([e["key"] for e in res])
     logger.info("在数据库中查询嵌入表示")
-    results = collection.query(query_embeddings=query_embeddings, n_results=n_results)
+    results = collection.query(
+        query_embeddings=query_embeddings,
+        where={"key": {"$in": keys}},
+        n_results=n_results,
+    )
     logger.info("处理查询结果")
     resmap = {}
     for i in range(len(queries)):

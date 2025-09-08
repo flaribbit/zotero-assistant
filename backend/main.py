@@ -41,31 +41,25 @@ def embedding_text(text: str):
     return llm.get_text_embedding(text)
 
 
-@router.get("/update_index")
-def update_index():
-    """更新索引"""
-    # TODO: 更新全文搜索数据库和llamaindex索引
-    return {"message": "Index updated"}
-
-
-@router.get("/index_collection")
-def index_collection(collection_key: str):
+@router.post("/index_collections")
+def index_collections(collections: list[str]):
     """索引指定文献集中的所有文献"""
-    return database.index_collection(collection_key)
+    # return database.index_collections(collections)
+    return StreamingResponse(database.index_collections(collections), media_type="text/event-stream")
 
 
 @router.post("/semantic_search")
-def semantic_search(query: list[str], n_results: int = 10):
+def semantic_search(query: list[str], collections: list[str], n_results: int = 10):
     """语义搜索"""
-    return database.semantic_search(query, n_results)
+    return database.semantic_search(query, collections, n_results)
 
 
 @router.post("/get_full_prompt")
-def get_full_prompt(query: str):
+def get_full_prompt(query: str, collections: list[str]):
     """根据用户查询生成完整提示词"""
     enhanced_query = llm.enhance_query(query)
-    knowledge = database.semantic_search(enhanced_query, n_results=10)
-    return llm.get_full_prompt(query, json.dumps(knowledge, ensure_ascii=False))
+    knowledge = database.semantic_search(enhanced_query, collections, n_results=10)
+    return {"prompt": llm.get_full_prompt(query, json.dumps(knowledge, ensure_ascii=False))}
 
 
 @router.get("/get_document")

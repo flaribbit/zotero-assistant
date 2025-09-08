@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, inject } from 'vue'
+import type { Ref } from 'vue'
 
 interface SearchItem {
   document: string
@@ -14,6 +15,7 @@ const query = ref('')
 const results = ref<SearchItem[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
+const selectedKeys = inject('selectedKeys') as Ref<string[]>
 
 async function doSearch() {
   if (!query.value.trim()) {
@@ -27,7 +29,7 @@ async function doSearch() {
     const res = await fetch('/api/semantic_search?n_results=40', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify([query.value]),
+      body: JSON.stringify({ query: [query.value], collections: selectedKeys.value }),
     })
     if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
     // semantic_search now returns items without title/publication/pdf_key
