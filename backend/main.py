@@ -1,6 +1,8 @@
 from fastapi import FastAPI, APIRouter
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from scalar_fastapi import get_scalar_api_reference
+from config import config
 import json
 import uvicorn
 import logging
@@ -11,20 +13,6 @@ import database
 logger = logging.getLogger("backend")
 app = FastAPI(title="Zotero Assistant API")
 router = APIRouter(prefix="/api")
-
-
-@app.get("/")
-def get_root():
-    content = """<html>
-<head>
-    <title>Zotero Assistant API</title>
-</head>
-<body>
-    <h1>Zotero Assistant API</h1>
-    <p>Welcome to the Zotero Assistant API. You can find the API documentation <a href="/scalar">here</a>.</p>
-</body>
-</html>"""
-    return HTMLResponse(content=content)
 
 
 @app.get("/scalar", include_in_schema=False)
@@ -77,7 +65,7 @@ def get_full_prompt(query: str):
     """根据用户查询生成完整提示词"""
     enhanced_query = llm.enhance_query(query)
     knowledge = database.semantic_search(enhanced_query, n_results=10)
-    return {"prompt": llm.get_full_prompt(query, json.dumps(knowledge, ensure_ascii=False))}
+    return llm.get_full_prompt(query, json.dumps(knowledge, ensure_ascii=False))
 
 
 @router.get("/get_document")
@@ -107,8 +95,22 @@ def chat_completion(messages: list[dict], temperature: float = 0.8, top_p: float
     )
 
 
+@app.get("/", include_in_schema=False)
+def serve_index():
+    """主页"""
+    return FileResponse(config["static_path"] + "/index.html")
+
+
 # include the API router
 app.include_router(router)
+# Mount static files for serving Vue app
+app.mount("/", StaticFiles(directory=config["static_path"]), name="static")
+
+
+@app.get("/{full_path:path}", include_in_schema=False)
+def catch_all(full_path: str):
+    """Catch-all route to serve Vue Router paths."""
+    return FileResponse(config["static_path"] + "/index.html")
 
 
 if __name__ == "__main__":

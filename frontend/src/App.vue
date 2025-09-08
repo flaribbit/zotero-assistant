@@ -70,7 +70,10 @@ onMounted(() => {
         <nav>
           <ul>
             <li>
-              <RouterLink to="/">全文搜索</RouterLink>
+              <RouterLink to="/">主页</RouterLink>
+            </li>
+            <li>
+              <RouterLink to="/fulltext">全文搜索</RouterLink>
             </li>
             <li>
               <RouterLink to="/semantic">语义搜索</RouterLink>
