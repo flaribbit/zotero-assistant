@@ -48,18 +48,61 @@ def index_collection(collection_key):
     return {"message": f"Indexed {len(items)} items in collection {collection_key}"}
 
 
-def get_document_by_key(key: str):
+# def get_document_by_key(key: str):
+#     """
+#     根据key获取文档内容
+
+#     Args:
+#         key (str): 文档的唯一标识符
+
+#     Returns:
+#         dict: 文档内容和元数据
+#     """
+#     # TODO
+#     return None
+
+def get_document_by_key(key: str, merge: bool = True):
     """
     根据key获取文档内容
 
     Args:
         key (str): 文档的唯一标识符
+        merge (bool): 是否合并所有分块文本为一个整体
+                      - True: 返回拼接后的完整文本
+                      - False: 返回按分块的文本列表
 
     Returns:
-        dict: 文档内容和元数据
+        dict: 包含文档内容、分块信息和元数据
     """
-    # TODO
-    return None
+    res = collection.get(where={"key": key}, include=["documents", "metadatas", "ids"])
+
+    if not res["ids"]:
+        return {
+            "message": f"Document with key {key} not found",
+            "content": None,
+            "metadata": None,
+            "chunks": [],
+        }
+
+    documents = res["documents"]  # list[str]
+    metadata = res["metadatas"][0]  # 取第一个即可，其他分块相同
+
+    if merge:
+        full_text = "\n".join(documents)
+        return {
+            "key": key,
+            "content": full_text,
+            "metadata": metadata,
+            "chunks": documents,
+        }
+    else:
+        return {
+            "key": key,
+            "content": None,  # 不拼接
+            "metadata": metadata,
+            "chunks": documents,
+        }
+
 
 
 def semantic_search(queries: list[str], n_results: int = 10):
