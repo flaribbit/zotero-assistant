@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { marked } from 'marked'
 
 const userInput = ref('')
 const llmResponse = ref('')
 const augmentedPrompt = ref('')
 const loading = ref(false)
 const statusMessage = ref('')
+const dialogVisible = ref(false)
+const dialogContent = ref({ title: '', publication: '', key: '', pdf_key: '', text: '' })
 
 async function copyToClipboard(text: string) {
   try {
@@ -31,7 +34,9 @@ async function sendQuery() {
       method: 'POST'
     })
     if (!promptRes.ok) statusMessage.value = `Error fetching prompt: ${promptRes.status} ${promptRes.statusText}`
-    augmentedPrompt.value = (await promptRes.json()).prompt
+
+    const promptData = await promptRes.json()
+    augmentedPrompt.value = promptData.prompt
 
     // Step 2: Generate response
     statusMessage.value = '正在生成回答...'
@@ -65,10 +70,58 @@ async function sendQuery() {
     statusMessage.value = ''
   }
 }
+
+function renderMarkdown(content: string) {
+  return marked(content)
+}
+
+async function handleLinkClick(key: string) {
+  try {
+    const res = await fetch(`/api/get_document?key=${encodeURIComponent(key)}`)
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+
+    const data = await res.json()
+    dialogContent.value = {
+      title: data.title || '',
+      publication: data.publication || '',
+      key: data.key || '',
+      pdf_key: data.pdf_key || '',
+      text: data.text || ''
+    }
+    dialogVisible.value = true
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err)
+    alert(`Error fetching document: ${errorMessage}`)
+  }
+}
+
+function renderMarkdownWithLinks(content: string) {
+  // Replace [@key] with clickable spans
+  const linkRegex = /\[@([A-Z0-9]{8}_\d+)]/g
+  return marked(
+    content.replace(linkRegex, (match, key) => {
+      return `<span class='link' data-key='${key}'>${match}</span>`
+    })
+  )
+}
+
+function handleLinkClickEvent(event: MouseEvent) {
+  const target = event.target as HTMLElement
+  if (target.classList.contains('link')) {
+    const key = target.getAttribute('data-key')
+    if (key) {
+      handleLinkClick(key)
+    }
+  }
+}
+
+function openItem(key: string) {
+  fetch(`/api/open/${encodeURIComponent(key)}`, { method: 'GET' })
+}
 </script>
 
 <template>
-  <div>
+  <div class="llm-qa">
     <h2>LLM问答</h2>
 
     <div class="input-section">
@@ -84,13 +137,28 @@ async function sendQuery() {
         <button @click="copyToClipboard(augmentedPrompt)">复制增强的 Prompt</button>
       </div>
 
-      <div v-if="llmResponse" class="llm-response">
-        <p>{{ llmResponse }}</p>
-        <button @click="copyToClipboard(llmResponse)">复制回答</button>
+      <div v-if="llmResponse" class="llm-response" v-html="renderMarkdownWithLinks(llmResponse)"
+        @click="handleLinkClickEvent"></div>
+      <button @click="copyToClipboard(llmResponse)">复制回答</button>
+    </div>
+  </div>
+
+  <div v-if="dialogVisible" class="dialog-overlay">
+    <div class="dialog">
+      <h3>{{ dialogContent.title }}</h3>
+      <p><strong>Publication:</strong> {{ dialogContent.publication }}</p>
+      <p><strong>Key:</strong> {{ dialogContent.key }}</p>
+      <p>{{ dialogContent.text }}</p>
+      <div class="dialog-actions">
+        <a :href="`zotero://select/library/items/${encodeURIComponent(dialogContent.key)}`" class="action-btn"
+          title="在Zotero中查看">查看</a>
+        <button @click="openItem(dialogContent.pdf_key)" v-if="dialogContent.pdf_key">打开PDF</button>
       </div>
+      <button @click="dialogVisible = false">关闭</button>
     </div>
   </div>
 </template>
+
 
 <style scoped>
 .input-section {
@@ -98,10 +166,10 @@ async function sendQuery() {
   flex-direction: column;
   gap: 0.5rem;
   margin-bottom: 1rem;
+  box-sizing: border-box;
 }
 
 textarea {
-  width: 100%;
   padding: 0.6rem;
   border: 1.5px solid #b3d4fc;
   border-radius: 8px;
@@ -109,6 +177,7 @@ textarea {
   resize: vertical;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
 }
 
 textarea:focus {
@@ -141,7 +210,6 @@ button:disabled {
   border: 1px solid #ddd;
   border-radius: 8px;
   background: #f9f9f9;
-  white-space: pre-wrap;
   word-wrap: break-word;
 }
 
@@ -150,21 +218,46 @@ button:disabled {
   margin-top: 1rem;
 }
 
-.augmented-prompt button,
-.llm-response button {
-  margin-top: 0.5rem;
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.dialog {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  max-width: 500px;
+  width: 100%;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.action-btn {
   padding: 0.4rem 0.8rem;
-  font-size: 0.9rem;
   background: #eaf6ff;
   color: #2176c7;
   border: 1px solid #cbe7ff;
   border-radius: 5px;
+  text-decoration: none;
+  font-size: 0.9rem;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
 }
 
-.augmented-prompt button:hover,
-.llm-response button:hover {
+.action-btn:hover {
   background: #d0eaff;
   color: #174a7c;
 }
@@ -182,5 +275,17 @@ button:disabled {
   -webkit-box-orient: vertical;
   line-clamp: 4;
   /* Standard property for compatibility */
+}
+</style>
+
+<style>
+.llm-qa .link {
+  color: blue;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.llm-qa .link:hover {
+  color: darkblue;
 }
 </style>
