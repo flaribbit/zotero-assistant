@@ -4,6 +4,7 @@ import logging
 import llm
 import os
 from tqdm import tqdm
+import re
 
 logger = logging.getLogger("backend")
 client = chromadb.PersistentClient(path="./data/chroma")
@@ -130,7 +131,57 @@ def semantic_search(queries: list[str], collections: list[str], n_results: int =
     return merged
 
 
-def fulltext_search(query: str, n_results: int = 20):
+def get_fulltext(key: str):
+    """
+    根据key获取文档全文
+
+    Args:
+        key (str): 文档的唯一标识符
+
+    Returns:
+        str: 文档全文
+    """
+    res = collection.get(where={"key": key})
+    texts = res["documents"]
+    # 去掉texts[i]结尾与texts[i+1]开头重复的部分，要计算重复长度
+    full_text = texts[0]
+    for i in range(1, len(texts)):
+        overlap_len = 0
+        for j in range(1, min(len(full_text), len(texts[i]))):
+            if full_text[-j:] == texts[i][:j]:
+                overlap_len = j
+        full_text += texts[i][overlap_len:]
+    return full_text
+
+
+def html_escape(text: str) -> str:
+    """替换HTML特殊字符"""
+    return (
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+        .replace("'", "&#39;")
+    )
+
+
+def _fulltext_search(
+    text: str, query: str, ignore_case: bool = False, preview_length: int = 100, preview_limit: int = 20
+):
+    preview = []
+    for match in re.finditer(query, text, re.IGNORECASE if ignore_case else 0):
+        b = match.start()
+        c = match.end()
+        a = max(0, b - preview_length)
+        d = min(len(text), c + preview_length)
+        if len(preview) < preview_limit:
+            preview.append(text[a:b] + f"<mark>{html_escape(match.group())}</mark>" + text[c:d])
+        else:
+            break
+    return preview
+
+
+def fulltext_search(queries: list[str], collections: list[str], ignore_case: bool = False):
     """
     全文搜索
 
@@ -141,8 +192,49 @@ def fulltext_search(query: str, n_results: int = 20):
     Returns:
         list: 搜索结果
     """
-    # TODO
-    return []
+    logger.info(f"在{collections}中进行全文搜索{queries}")
+    query = queries[0]
+    logger.info("获取文档列表")
+    keys = []
+    for c in collections:
+        res = zotero.get_items_in_collection(c)
+        keys.extend([e["key"] for e in res])
+    logger.info(f"文档总数: {len(keys)}，开始在数据库中过滤")
+    res = collection.get(
+        where_document={"$regex": "(?i)" + query if ignore_case else query},
+        where={"key": {"$in": keys}},
+    )
+
+    keys = set()
+    for i in range(len(res["ids"])):
+        key = res["metadatas"][i]["key"]
+        keys.add(key)
+    keys = list(keys)
+
+    logger.info(f"在数据库中查询到{len(keys)}个符合条件的文档，开始进行全文搜索")
+    res = []
+    for key in tqdm(keys):
+        full_text = get_fulltext(key)
+        preview = []
+        for query in queries:
+            r = _fulltext_search(full_text, query, ignore_case)
+            if r:
+                preview.extend(r)
+            else:  # 只要有一个query没有匹配，就跳过这个文档
+                preview = []
+                break
+        if preview:
+            info = zotero.get_item_info(key)
+            res.append(
+                {
+                    "title": info["title"],
+                    "publication": info["publication"],
+                    "key": key,
+                    "pdf_key": info["pdf_key"],
+                    "preview": preview,
+                }
+            )
+    return res
 
 
 if __name__ == "__main__":

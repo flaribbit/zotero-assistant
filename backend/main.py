@@ -1,5 +1,5 @@
 from fastapi import FastAPI, APIRouter
-from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from scalar_fastapi import get_scalar_api_reference
 from config import config
@@ -52,6 +52,12 @@ def index_collections(collections: list[str]):
 def semantic_search(query: list[str], collections: list[str], n_results: int = 10):
     """语义搜索"""
     return database.semantic_search(query, collections, n_results)
+
+
+@router.post("/fulltext_search")
+def fulltext_search(query: list[str], collections: list[str], ignore_case: bool = True):
+    """全文搜索"""
+    return database.fulltext_search(query, collections, ignore_case)
 
 
 @router.post("/get_full_prompt")

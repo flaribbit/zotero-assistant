@@ -90,7 +90,7 @@ const openExportPath = () => {
 <template>
   <h2>语义搜索</h2>
   <p style="display: flex; gap: 0.5em;">
-    <input v-model="query" @keypress="doSearch" placeholder="输入查询并回车或点击搜索" aria-label="搜索查询" style="width:400px;" />
+    <input v-model="query" @keypress.enter="doSearch" style="width:400px;" />
     <span>最多</span>
     <input type="number" v-model.number="n_results" min="1" max="200" style="width: 3em; text-align: right;" />
     <span>个结果</span>
