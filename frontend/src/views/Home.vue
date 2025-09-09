@@ -53,12 +53,12 @@ async function startIndexing() {
     <p>欢迎来到 Zotero 助手！</p>
     <p>这里可以借助大模型来检索 Zotero 中的文献。</p>
     <p>请使用上方的导航栏进行操作。</p>
-    <p>如果你是开发者，可以在 <a href="/scalar">这个页面</a> 查看后端 API 文档</p>
+    <p>如果你是开发者，可以点击 <a href="/scalar">这个链接</a> 查看后端 API 文档</p>
     <h3>使用说明</h3>
     <ol>
-      <li>在左侧勾选文献集合。</li>
+      <li>在左侧勾选文献集合</li>
       <li>点击这个 <button @click="startIndexing">索引</button> 按钮</li>
-      <li>这里会显示索引进度：{{ indexingProgress }}</li>
+      <li>现在的索引进度是：{{ indexingProgress }}</li>
     </ol>
   </div>
 </template>
