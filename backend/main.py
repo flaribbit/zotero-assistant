@@ -55,9 +55,9 @@ def semantic_search(query: list[str], collections: list[str], n_results: int = 1
 
 
 @router.post("/fulltext_search")
-def fulltext_search(query: list[str], collections: list[str], ignore_case: bool = True):
+def fulltext_search(query: list[str], collections: list[str], ignore_case: bool = True, no_db: bool = False):
     """全文搜索"""
-    return database.fulltext_search(query, collections, ignore_case)
+    return database.fulltext_search(query, collections, ignore_case, no_db)
 
 
 @router.post("/get_full_prompt")

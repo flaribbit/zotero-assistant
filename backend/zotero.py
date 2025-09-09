@@ -31,18 +31,20 @@ def get_items_in_collection(collection_key: str):
     return [{"key": e["key"], "title": e["data"].get("title", "Untitled")} for e in res.json()]
 
 
-def find_pdf_file_in_path(path: str) -> str:
+def find_pdf_file_by_key(pdf_key: str) -> str:
     """
-    在指定路径中查找PDF文件
+    根据pdf_key查找PDF文件的路径
 
     理论上应该用Zotero api，但是这个方法更高效
 
     Args:
-        path (str): 要查找的路径
+        pdf_key (str): 要查找的PDF文件的唯一标识符
 
     Returns:
         str: 找到的PDF文件的路径，如果未找到则返回None
     """
+    zotero_path = config["zotero_path"]
+    path = f"{zotero_path}/storage/{pdf_key}"
     for e in os.listdir(path):
         if os.path.splitext(e)[1] == ".pdf":
             return f"{path}/{e}"
@@ -59,14 +61,13 @@ def get_pdf_path_in_collection(collection_key: str):
     Returns:
         list: 文献集中文献的PDF文件路径
     """
-    zotero_path = config["zotero_path"]
     res = client.get(f"collections/{collection_key}/items")
     ret = []
     for e in res.json():
         if "attachment" not in e["links"]:
             continue
         pdf_key = e["links"]["attachment"]["href"][-8:]
-        pdf_path = find_pdf_file_in_path(f"{zotero_path}/storage/{pdf_key}")
+        pdf_path = find_pdf_file_by_key(pdf_key)
         title = e["data"]["title"]
         if not pdf_path:
             logger.warning(f"PDF file of {title} not found. Skipping.")
@@ -114,8 +115,7 @@ def open_pdf(pdf_key: str):
     Args:
         pdf_key (str): PDF文件的唯一标识符
     """
-    zotero_path = config["zotero_path"]
-    pdf_path = find_pdf_file_in_path(f"{zotero_path}/storage/{pdf_key}")
+    pdf_path = find_pdf_file_by_key(pdf_key)
     if not pdf_path:
         logger.warning(f"PDF file of {pdf_key} not found. Skipping.")
         return
@@ -132,11 +132,10 @@ def export_pdf(pdf_key: str) -> str:
     Returns:
         str: 导出的PDF文件路径
     """
-    zotero_path = config["zotero_path"]
     export_path = "data/export"
     if not os.path.exists(export_path):
         os.makedirs(export_path)
-    pdf_path = find_pdf_file_in_path(f"{zotero_path}/storage/{pdf_key}")
+    pdf_path = find_pdf_file_by_key(pdf_key)
     if not pdf_path:
         logger.warning(f"PDF file of {pdf_key} not found. Skipping.")
         return None

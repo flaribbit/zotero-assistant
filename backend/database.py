@@ -131,16 +131,25 @@ def semantic_search(queries: list[str], collections: list[str], n_results: int =
     return merged
 
 
-def get_fulltext(key: str):
+def get_fulltext(key: str, no_db: bool = False) -> str:
     """
     根据key获取文档全文
 
     Args:
         key (str): 文档的唯一标识符
+        no_db (bool): 不使用数据库，直接从Zotero获取
 
     Returns:
         str: 文档全文
     """
+    if no_db:
+        item = zotero.get_item_info(key)
+        if not item or not item["pdf_key"]:
+            return ""
+        pdf_path = zotero.find_pdf_file_by_key(item["pdf_key"])
+        if not pdf_path:
+            return ""
+        return zotero.get_pdf_text(pdf_path)
     res = collection.get(where={"key": key})
     texts = res["documents"]
     # 去掉texts[i]结尾与texts[i+1]开头重复的部分，要计算重复长度
@@ -181,13 +190,15 @@ def _fulltext_search(
     return preview
 
 
-def fulltext_search(queries: list[str], collections: list[str], ignore_case: bool = False):
+def fulltext_search(queries: list[str], collections: list[str], ignore_case: bool = False, no_db: bool = False):
     """
     全文搜索
 
     Args:
         query (str): 查询文本
-        n_results (int): 返回的结果数量
+        collections (list[str]): 文献集的唯一标识符列表
+        ignore_case (bool): 是否忽略大小写
+        no_db (bool): 不使用数据库，直接从Zotero获取
 
     Returns:
         list: 搜索结果
@@ -199,22 +210,23 @@ def fulltext_search(queries: list[str], collections: list[str], ignore_case: boo
     for c in collections:
         res = zotero.get_items_in_collection(c)
         keys.extend([e["key"] for e in res])
-    logger.info(f"文档总数: {len(keys)}，开始在数据库中过滤")
-    res = collection.get(
-        where_document={"$regex": "(?i)" + query if ignore_case else query},
-        where={"key": {"$in": keys}},
-    )
+    if not no_db:
+        logger.info(f"文档总数: {len(keys)}，开始在数据库中过滤")
+        res = collection.get(
+            where_document={"$regex": "(?i)" + query if ignore_case else query},
+            where={"key": {"$in": keys}},
+        )
 
-    keys = set()
-    for i in range(len(res["ids"])):
-        key = res["metadatas"][i]["key"]
-        keys.add(key)
-    keys = list(keys)
+        keys = set()
+        for i in range(len(res["ids"])):
+            key = res["metadatas"][i]["key"]
+            keys.add(key)
+        keys = list(keys)
 
-    logger.info(f"在数据库中查询到{len(keys)}个符合条件的文档，开始进行全文搜索")
+    logger.info(f"查询到{len(keys)}个符合条件的文档，开始进行全文搜索")
     res = []
     for key in tqdm(keys):
-        full_text = get_fulltext(key)
+        full_text = get_fulltext(key, no_db)
         preview = []
         for query in queries:
             r = _fulltext_search(full_text, query, ignore_case)

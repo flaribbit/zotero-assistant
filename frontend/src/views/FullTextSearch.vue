@@ -5,6 +5,7 @@ import type { Ref } from 'vue'
 const selectedKeys = inject('selectedKeys') as Ref<string[]>
 const query = ref('')
 const ignoreCase = ref(true);
+const noDb = ref(false);
 
 const results = ref<Array<{ title: string; publication: string; key: string; pdf_key: string; preview: string }>>([]);
 const loading = ref(false);
@@ -26,6 +27,7 @@ async function doSearch() {
         query: query.value.split('&&'),
         collections: selectedKeys.value,
         ignore_case: ignoreCase.value,
+        no_db: noDb.value,
       }),
     });
 
@@ -77,6 +79,10 @@ const openExportPath = () => {
     <label>
       <input type="checkbox" v-model="ignoreCase" id="ignore-case" />
       <span>忽略大小写</span>
+    </label>
+    <label>
+      <input type="checkbox" v-model="noDb" id="no-db" />
+      <span>不使用数据库（慢）</span>
     </label>
     <button type="button" @click="doSearch" :disabled="loading">搜索</button>
     <button type="button" @click="exportAll">导出全部</button>
