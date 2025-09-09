@@ -81,6 +81,20 @@ def open_pdf(key: str):
     return {"message": f"Opened PDF {key}"}
 
 
+@router.get("/export/{key}")
+def export_document(key: str):
+    """导出PDF文件"""
+    path = zotero.export_pdf(key)
+    return {"message": f"Exported PDF {key} to {path}"}
+
+
+@router.get("/open_export_path")
+def open_export_path():
+    """打开导出文件夹"""
+    zotero.open_export_path()
+    return {"message": "Opened export path"}
+
+
 @router.post("/completion")
 def chat_completion(messages: list[dict], temperature: float = 0.8, top_p: float = 0.9) -> StreamingResponse:
     """获取聊天补全"""

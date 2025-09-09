@@ -71,6 +71,20 @@ const openItem = (key: string) => {
 const exportItem = (key: string) => {
   fetch(`/api/export/${encodeURIComponent(key)}`, { method: 'GET' })
 }
+
+const exportAll = () => {
+  const keys: Record<string, boolean> = {}
+  for (const item of results.value) {
+    keys[item.key] = true
+  }
+  for (const key of Object.keys(keys)) {
+    exportItem(key)
+  }
+}
+
+const openExportPath = () => {
+  fetch('/api/open_export_path', { method: 'GET' })
+}
 </script>
 
 <template>
@@ -81,6 +95,8 @@ const exportItem = (key: string) => {
     <input type="number" v-model.number="n_results" min="1" max="200" style="width: 3em; text-align: right;" />
     <span>个结果</span>
     <button type="button" @click="doSearch" :disabled="loading">搜索</button>
+    <button type="button" @click="exportAll">导出全部</button>
+    <button type="button" @click="openExportPath">打开目录</button>
   </p>
   <p v-if="loading">搜索中…</p>
   <p v-else-if="error">错误：{{ error }}</p>

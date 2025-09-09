@@ -2,6 +2,7 @@ import os
 import logging
 import httpx
 import pymupdf
+import shutil
 from config import config
 
 logger = logging.getLogger("backend")
@@ -119,6 +120,35 @@ def open_pdf(pdf_key: str):
         logger.warning(f"PDF file of {pdf_key} not found. Skipping.")
         return
     os.startfile(pdf_path)
+
+
+def export_pdf(pdf_key: str) -> str:
+    """
+    导出PDF文件到指定路径
+
+    Args:
+        pdf_key (str): PDF文件的唯一标识符
+
+    Returns:
+        str: 导出的PDF文件路径
+    """
+    zotero_path = config["zotero_path"]
+    export_path = "data/export"
+    if not os.path.exists(export_path):
+        os.makedirs(export_path)
+    pdf_path = find_pdf_file_in_path(f"{zotero_path}/storage/{pdf_key}")
+    if not pdf_path:
+        logger.warning(f"PDF file of {pdf_key} not found. Skipping.")
+        return None
+    shutil.copy(pdf_path, export_path)
+
+
+def open_export_path():
+    """打开导出PDF文件的文件夹"""
+    export_path = "data/export"
+    if not os.path.exists(export_path):
+        os.makedirs(export_path)
+    os.startfile(os.path.abspath(export_path))
 
 
 def get_pdf_text(pdf_path: str):
