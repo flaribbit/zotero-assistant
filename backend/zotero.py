@@ -27,7 +27,7 @@ def get_items_in_collection(collection_key: str):
         list: 文献集中的所有文献
     """
     res = client.get(f"collections/{collection_key}/items")
-    return [{"key": e["key"], "title": e["data"]["title"]} for e in res.json()]
+    return [{"key": e["key"], "title": e["data"].get("title", "Untitled")} for e in res.json()]
 
 
 def find_pdf_file_in_path(path: str) -> str:
