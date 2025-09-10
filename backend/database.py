@@ -222,6 +222,8 @@ def fulltext_search(queries: list[str], collections: list[str], ignore_case: boo
             key = res["metadatas"][i]["key"]
             keys.add(key)
         keys = list(keys)
+    else:
+        keys = list(set(keys))  # 去重
 
     logger.info(f"查询到{len(keys)}个符合条件的文档，开始进行全文搜索")
     res = []
