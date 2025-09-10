@@ -56,9 +56,11 @@ async function startIndexing() {
     <p>如果你是开发者，可以点击 <a href="/scalar">这个链接</a> 查看后端 API 文档</p>
     <h3>使用说明</h3>
     <ol>
+      <li>使用语义搜索之前必须先建立向量数据库</li>
       <li>在左侧勾选文献集合</li>
       <li>点击这个 <button @click="startIndexing">索引</button> 按钮</li>
       <li>现在的索引进度是：{{ indexingProgress }}</li>
+      <li>如果只是需要普通的全文搜索，也可以不建立向量数据库，在全文搜索页面勾选不使用数据库即可</li>
     </ol>
   </div>
 </template>

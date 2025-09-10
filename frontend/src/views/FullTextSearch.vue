@@ -20,14 +20,12 @@ async function doSearch() {
   loading.value = true;
   error.value = null;
   try {
-    const res = await fetch('/api/fulltext_search', {
+    const res = await fetch(`/api/fulltext_search?ignore_case=${ignoreCase.value}&no_db=${noDb.value}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         query: query.value.split('&&'),
         collections: selectedKeys.value,
-        ignore_case: ignoreCase.value,
-        no_db: noDb.value,
       }),
     });
 
