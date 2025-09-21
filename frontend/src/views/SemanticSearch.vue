@@ -75,7 +75,7 @@ const exportItem = (key: string) => {
 const exportAll = () => {
   const keys: Record<string, boolean> = {}
   for (const item of results.value) {
-    keys[item.key] = true
+    keys[item.pdf_key] = true
   }
   for (const key of Object.keys(keys)) {
     exportItem(key)
